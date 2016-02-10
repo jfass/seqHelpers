@@ -1,0 +1,3 @@
+This is a set of helper scripts for dealing with high throughput sequence data (Illumina and PacBio mainly).
+
+Examples to come ...
