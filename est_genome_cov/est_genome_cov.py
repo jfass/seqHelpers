@@ -12,23 +12,39 @@ can provide a coverage cutoff and receive the read
 length cutoff that provides the specified coverage.
 
 Examples:
-$ python est_genome_cov.py -g 2000000 reads.fasta
-$ cat *.fa | python est_genome_cov.py -g 5000 -
-$ python est_genome_cov.py -g 100000 -c 60 reads.fa
+$ python est_genome_cov.py -g 2000000 reads.fastq
+$ cat *.fq | python est_genome_cov.py -g 5000 -
+$ python est_genome_cov.py -g 100000 -c 60 reads.fq
 $ python est_genome_cov.py -g 5000 -f
 """
 
+import sys
 import argparse
 import subprocess
 import matplotlib.pyplot as plt
+import itertools
+
+def filterReads(readsFileName, lengthCutoff):
+    # open and iterate through reads file, output long reads
+    with open(readsFileName, 'r') as readsFile:
+        while True:
+            block = list(itertools.islice(readsFile, 4))
+            if block:
+#                print block[1]
+                if len(block[1]) > lengthCutoff:
+                    sys.stdout.write(block[0] + block[1] + block[2] + block[3])
+            else:
+                break
 
 def getLengths(readsFileName):
     # open and iterate through reads file, gleaning lengths
-    readsFile = open(readsFileName, 'r')
-    lines = readsFile.readlines()
     lengthList = []
-    for line in lines:
-        lengthList.append(len(line))
+    lineCount = 0
+    with open(readsFileName, 'r') as readsFile:
+        for line in readsFile:
+            lineCount += 1
+            if lineCount % 4 == 2:   # 2nd line of fastq block
+                lengthList.append(len(line) - 1)
     lengthList = sorted(lengthList, reverse=True)
     return lengthList
 
@@ -54,15 +70,18 @@ def printGraph(lengths, foldCvgs):
 def main():
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('reads', help='reads in fasta format; no newlines in sequence')
+    parser.add_argument('reads', help='reads in fastq format; no newlines in sequence or quality strings')
     parser.add_argument('-g', '--genomeSize', help='size of genome, in base pairs', type=int)
     parser.add_argument('-c', '--coverageCutoff', help='coverage cutoff', type=float)
     parser.add_argument('-f', '--filter', action='store_true', help='output filtered reads to STDOUT')
     args = parser.parse_args()
     # calculate length and cumulative coverage
-    lengths = getLengths(args.reads)
-    coverages = cumulativeCovg(lengths, args.genomeSize)
-    printGraph(lengths, coverages)
+    if args.filter:
+        filterReads(args.reads, args.coverageCutoff)
+    else:
+        lengths = getLengths(args.reads)
+        coverages = cumulativeCovg(lengths, args.genomeSize)
+        printGraph(lengths, coverages)
 
 if __name__ == '__main__':
     main()
