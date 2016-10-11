@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+# author: Joseph Fass joseph.fass@gmail.com
+# license: GNU GPL v3
+
 """
 This script is intended to take fasta file (or stream)
 and graph the cumulative coverage (given a genome size)
@@ -31,7 +34,7 @@ def filterReads(readsFileName, lengthCutoff):
             block = list(itertools.islice(readsFile, 4))
             if block:
 #                print block[1]
-                if len(block[1]) > lengthCutoff:
+                if len(block[1]) >= lengthCutoff:
                     sys.stdout.write(block[0] + block[1] + block[2] + block[3])
             else:
                 break
@@ -72,12 +75,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('reads', help='reads in fastq format; no newlines in sequence or quality strings')
     parser.add_argument('-g', '--genomeSize', help='size of genome, in base pairs', type=int)
-    parser.add_argument('-c', '--coverageCutoff', help='coverage cutoff', type=float)
+    parser.add_argument('-l', '--lengthCutoff', help='read length cutoff', type=float)
     parser.add_argument('-f', '--filter', action='store_true', help='output filtered reads to STDOUT')
     args = parser.parse_args()
     # calculate length and cumulative coverage
     if args.filter:
-        filterReads(args.reads, args.coverageCutoff)
+        filterReads(args.reads, args.lengthCutoff)
     else:
         lengths = getLengths(args.reads)
         coverages = cumulativeCovg(lengths, args.genomeSize)
